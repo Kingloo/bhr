@@ -36,7 +36,7 @@ With specific unit
 
 With specific unit:
 
-`echo 1000000000 | bhr -k`
+`echo 1000000000 | bhr k`
 
 	976562.50 KiB
 
