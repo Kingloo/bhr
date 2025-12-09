@@ -16,13 +16,13 @@ Accepted units are:
 
 	`e` for exbibytes
 
-## Chooses unit automatically
+## Value as an argument
 
 `bhr 1000000000`
 
 	953.67 MiB
 
-## With specific unit
+With specific unit
 
 `bhr k 1000000000`
 
@@ -30,11 +30,15 @@ Accepted units are:
 
 ## Reading from stdin
 
-echo 1000000000 | bhr
+`echo 1000000000 | bhr`
 
-Or
+	953.67 MiB
 
-echo 1000000000 | bhr -k
+With specific unit:
+
+`echo 1000000000 | bhr -k`
+
+	976562.50 KiB
 
 ## Limitations
 
