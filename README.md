@@ -39,7 +39,3 @@ With specific unit:
 `echo 1000000000 | bhr k`
 
 	976562.50 KiB
-
-## Limitations
-
-Limited to the maximum value of a signed 64-bit integer, aka `9223372036854775807`, or about 8 exbibytes.

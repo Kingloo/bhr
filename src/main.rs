@@ -1,18 +1,18 @@
 use std::io::IsTerminal;
-use std::num::ParseIntError;
 use std::process::ExitCode;
 use std::str::FromStr;
 
-use rust_decimal::Decimal;
+use bigdecimal::num_bigint::{BigUint, ParseBigIntError};
+use bigdecimal::{BigDecimal, FromPrimitive, One};
 
-const ONE_KIB: i64 = 1024i64;
-const ONE_MIB: i64 = ONE_KIB * ONE_KIB;
-const ONE_GIB: i64 = ONE_MIB * ONE_KIB;
-const ONE_TIB: i64 = ONE_GIB * ONE_KIB;
-const ONE_PIB: i64 = ONE_TIB * ONE_KIB;
-const ONE_EIB: i64 = ONE_PIB * ONE_KIB;
-// const ZiBn: i64 = EiBn * KiBn;
-// const YiBn: i64 = ZiBn * KiBn;
+const ONE_KIB: u128 = 1024u128;
+const ONE_MIB: u128 = ONE_KIB * ONE_KIB;
+const ONE_GIB: u128 = ONE_MIB * ONE_KIB;
+const ONE_TIB: u128 = ONE_GIB * ONE_KIB;
+const ONE_PIB: u128 = ONE_TIB * ONE_KIB;
+const ONE_EIB: u128 = ONE_PIB * ONE_KIB;
+const ONE_ZIB: u128 = ONE_EIB * ONE_KIB;
+const ONE_YIB: u128 = ONE_ZIB * ONE_KIB;
 
 enum Unit {
 	Bytes,
@@ -68,24 +68,24 @@ impl TryFrom<&String> for Unit {
 	}
 }
 
-impl From<&i64> for Unit {
-	fn from(value: &i64) -> Self {
+impl From<&BigUint> for Unit {
+	fn from(value: &BigUint) -> Self {
 		match value {
-			bytes if *bytes < ONE_KIB => Unit::Bytes,
-			kib if *kib < ONE_MIB => Unit::KiB,
-			mib if *mib < ONE_GIB => Unit::MiB,
-			gib if *gib < ONE_TIB => Unit::GiB,
-			tib if *tib < ONE_PIB => Unit::TiB,
-			pib if *pib < ONE_EIB => Unit::PiB,
-			_ => Unit::EiB,
-			// zib if *zib < YiBn => Unit::ZiB,
-			// _ => Unit::YiB
+			bytes if *bytes < BigUint::from_u128(ONE_KIB).unwrap() => Unit::Bytes,
+			kib if *kib < BigUint::from_u128(ONE_MIB).unwrap() => Unit::KiB,
+			mib if *mib < BigUint::from_u128(ONE_GIB).unwrap() => Unit::MiB,
+			gib if *gib < BigUint::from_u128(ONE_TIB).unwrap() => Unit::GiB,
+			tib if *tib < BigUint::from_u128(ONE_PIB).unwrap() => Unit::TiB,
+			pib if *pib < BigUint::from_u128(ONE_EIB).unwrap() => Unit::PiB,
+			eib if *eib < BigUint::from_u128(ONE_ZIB).unwrap() => Unit::EiB,
+			zib if *zib < BigUint::from_u128(ONE_YIB).unwrap() => Unit::ZiB,
+			_ => Unit::YiB,
 		}
 	}
 }
 
-impl From<i64> for Unit {
-	fn from(value: i64) -> Self {
+impl From<BigUint> for Unit {
+	fn from(value: BigUint) -> Self {
 		Unit::from(&value)
 	}
 }
@@ -93,12 +93,12 @@ impl From<i64> for Unit {
 fn main() -> ExitCode {
 	let args: Vec<String> = std::env::args().collect();
 	// println!("{:?}", args);
-	let number: Result<i64, ParseIntError> = get_number(&args);
+	let number: Result<BigUint, ParseBigIntError> = get_number(&args);
 
 	match number {
 		Ok(result) => {
-			let unit: Unit = get_unit(&args, result);
-			println!("{}", convert(&unit, result));
+			let unit: Unit = get_unit(&args, &result);
+			println!("{}", convert(&unit, &result));
 			ExitCode::SUCCESS
 		}
 		Err(e) => {
@@ -108,7 +108,7 @@ fn main() -> ExitCode {
 	}
 }
 
-fn get_number(args: &Vec<String>) -> Result<i64, ParseIntError> {
+fn get_number(args: &Vec<String>) -> Result<BigUint, ParseBigIntError> {
 	if std::io::stdin().is_terminal() {
 		get_number_from_args(args)
 	} else {
@@ -119,21 +119,21 @@ fn get_number(args: &Vec<String>) -> Result<i64, ParseIntError> {
 	}
 }
 
-fn get_number_from_args(args: &Vec<String>) -> Result<i64, ParseIntError> {
+fn get_number_from_args(args: &Vec<String>) -> Result<BigUint, ParseBigIntError> {
 	match args.as_slice() {
-		[_, number] => i64::from_str(number),
-		[_, _, number] => i64::from_str(number),
+		[_, number] => BigUint::from_str(number),
+		[_, _, number] => BigUint::from_str(number),
 		_ => panic!("usage: number"),
 	}
 }
 
-fn get_number_from_stdin() -> Option<Result<i64, ParseIntError>> {
+fn get_number_from_stdin() -> Option<Result<BigUint, ParseBigIntError>> {
 	let mut buffer: String = String::new();
 	match std::io::stdin().read_line(&mut buffer) {
 		Ok(size) => {
 			if size > 0 {
 				let without_newlines = buffer.trim_end_matches(['\n', '\r']);
-				Some(i64::from_str(without_newlines))
+				Some(BigUint::from_str(without_newlines))
 			} else {
 				None
 			}
@@ -142,7 +142,7 @@ fn get_number_from_stdin() -> Option<Result<i64, ParseIntError>> {
 	}
 }
 
-fn get_unit(args: &Vec<String>, number: i64) -> Unit {
+fn get_unit(args: &Vec<String>, number: &BigUint) -> Unit {
 	match args.as_slice() {
 		[_, unit] => Unit::try_from(unit).unwrap_or(Unit::from(number)),
 		[_, unit, _] => Unit::try_from(unit).unwrap_or(Unit::from(number)),
@@ -150,22 +150,23 @@ fn get_unit(args: &Vec<String>, number: i64) -> Unit {
 	}
 }
 
-fn convert(unit: &Unit, number: i64) -> String {
-	let divisor: i64 = get_divisor(unit);
-	let decimal = Decimal::new(number, 0) / Decimal::new(divisor, 0);
-	let decimal_places = if number > divisor { 2 } else { 3 };
-	format!("{} {}", decimal.round_dp(decimal_places), unit)
+fn convert(unit: &Unit, number: &BigUint) -> String {
+	let divisor: BigUint = get_divisor(unit);
+	let decimal = BigDecimal::new(number.clone().into(), 0) / BigDecimal::new(divisor.clone().into(), 0);
+	let decimal_places = if number > &divisor { 2 } else { 3 };
+	format!("{} {}", decimal.round(decimal_places), unit)
 }
 
-fn get_divisor(unit: &Unit) -> i64 {
+fn get_divisor(unit: &Unit) -> BigUint {
 	match unit {
-		Unit::Bytes => 1i64,
-		Unit::KiB => ONE_KIB,
-		Unit::MiB => ONE_MIB,
-		Unit::GiB => ONE_GIB,
-		Unit::TiB => ONE_TIB,
-		Unit::PiB => ONE_PIB,
-		Unit::EiB => ONE_EIB,
-		_other => panic!("cannot handle unit: {_other}"),
+		Unit::Bytes => BigUint::one(),
+		Unit::KiB => BigUint::from_u128(ONE_KIB).unwrap(),
+		Unit::MiB => BigUint::from_u128(ONE_MIB).unwrap(),
+		Unit::GiB => BigUint::from_u128(ONE_GIB).unwrap(),
+		Unit::TiB => BigUint::from_u128(ONE_TIB).unwrap(),
+		Unit::PiB => BigUint::from_u128(ONE_PIB).unwrap(),
+		Unit::EiB => BigUint::from_u128(ONE_EIB).unwrap(),
+		Unit::ZiB => BigUint::from_u128(ONE_ZIB).unwrap(),
+		Unit::YiB => BigUint::from_u128(ONE_YIB).unwrap(),
 	}
 }
