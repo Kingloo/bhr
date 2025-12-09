@@ -55,7 +55,7 @@ impl TryFrom<&str> for Unit {
 			"e" => Ok(Unit::EiB),
 			"z" => Ok(Unit::ZiB),
 			"y" => Ok(Unit::YiB),
-			_ => Err(())
+			_ => Err(()),
 		}
 	}
 }
@@ -92,15 +92,15 @@ impl From<i64> for Unit {
 
 fn main() -> ExitCode {
 	let args: Vec<String> = std::env::args().collect();
-	println!("{:?}", args);
+	// println!("{:?}", args);
 	let number: Result<i64, ParseIntError> = get_number(&args);
-	
+
 	match number {
 		Ok(result) => {
 			let unit: Unit = get_unit(&args, result);
 			println!("{}", convert(&unit, result));
 			ExitCode::SUCCESS
-		},
+		}
 		Err(e) => {
 			eprintln!("error: {e}");
 			ExitCode::FAILURE
@@ -110,11 +110,11 @@ fn main() -> ExitCode {
 
 fn get_number(args: &Vec<String>) -> Result<i64, ParseIntError> {
 	if std::io::stdin().is_terminal() {
-		get_number_from_args(&args)
+		get_number_from_args(args)
 	} else {
 		match get_number_from_stdin() {
 			Some(value) => value,
-			None => get_number_from_args(&args)
+			None => get_number_from_args(args),
 		}
 	}
 }
@@ -123,20 +123,22 @@ fn get_number_from_args(args: &Vec<String>) -> Result<i64, ParseIntError> {
 	match args.as_slice() {
 		[_, number] => i64::from_str(number),
 		[_, _, number] => i64::from_str(number),
-		_ => panic!("usage: number")
+		_ => panic!("usage: number"),
 	}
 }
 
 fn get_number_from_stdin() -> Option<Result<i64, ParseIntError>> {
 	let mut buffer: String = String::new();
 	match std::io::stdin().read_line(&mut buffer) {
-		Ok(size) => if size > 0 {
-			let without_newlines = buffer.trim_end_matches(|c| c == '\n' || c == '\r');
-			Some(i64::from_str(&without_newlines))
-		} else {
-			None
-		},
-		Err(_) => None
+		Ok(size) => {
+			if size > 0 {
+				let without_newlines = buffer.trim_end_matches(['\n', '\r']);
+				Some(i64::from_str(without_newlines))
+			} else {
+				None
+			}
+		}
+		Err(_) => None,
 	}
 }
 
@@ -144,7 +146,7 @@ fn get_unit(args: &Vec<String>, number: i64) -> Unit {
 	match args.as_slice() {
 		[_, unit] => Unit::try_from(unit).unwrap_or(Unit::from(number)),
 		[_, unit, _] => Unit::try_from(unit).unwrap_or(Unit::from(number)),
-		_ => Unit::from(number)
+		_ => Unit::from(number),
 	}
 }
 
@@ -152,7 +154,7 @@ fn convert(unit: &Unit, number: i64) -> String {
 	let divisor: i64 = get_divisor(unit);
 	let decimal = Decimal::new(number, 0) / Decimal::new(divisor, 0);
 	let decimal_places = if number > divisor { 2 } else { 3 };
-	return format!("{} {}", decimal.round_dp(decimal_places), unit);
+	format!("{} {}", decimal.round_dp(decimal_places), unit)
 }
 
 fn get_divisor(unit: &Unit) -> i64 {
@@ -164,6 +166,6 @@ fn get_divisor(unit: &Unit) -> i64 {
 		Unit::TiB => ONE_TIB,
 		Unit::PiB => ONE_PIB,
 		Unit::EiB => ONE_EIB,
-		__ => panic!("cannot handle unit: {__}")
+		_other => panic!("cannot handle unit: {_other}"),
 	}
 }
